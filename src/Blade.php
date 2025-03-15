@@ -2,124 +2,285 @@
 
 namespace Jenssegers\Blade;
 
-use Illuminate\Config\Repository;
-use Illuminate\Contracts\Container\Container as ContainerInterface;
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Contracts\View\Factory as FactoryContract;
-use Illuminate\Contracts\View\View;
+use Illuminate\Container\Container;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Facade;
 use Illuminate\View\Compilers\BladeCompiler;
+use Illuminate\View\Engines\CompilerEngine;
+use Illuminate\View\Engines\EngineResolver;
 use Illuminate\View\Factory;
-use Illuminate\View\ViewServiceProvider;
+use Illuminate\View\FileViewFinder;
+use Illuminate\View\ViewFinderInterface;
 
-class Blade implements FactoryContract
+class Blade
 {
-    /**
-     * @var Application
-     */
-    protected $container;
-
     /**
      * @var Factory
      */
-    private $factory;
+    protected $factory;
 
     /**
      * @var BladeCompiler
      */
-    private $compiler;
+    protected $compiler;
 
-    public function __construct($viewPaths, string $cachePath, ContainerInterface $container = null)
+    /**
+     * @var Container
+     */
+    protected $container;
+
+    /**
+     * @var string
+     */
+    protected $viewPaths;
+
+    /**
+     * @var string
+     */
+    protected $cachePath;
+
+    /**
+     * Create a new Blade instance.
+     *
+     * @param  array|string  $viewPaths
+     * @param  string  $cachePath
+     * @param  \Illuminate\View\Factory|null  $factory
+     * @return void
+     */
+    public function __construct($viewPaths, string $cachePath, Factory $factory = null)
     {
-        $this->container = $container ?: new Container;
+        $this->viewPaths = $viewPaths;
+        $this->cachePath = $cachePath;
 
-        $this->setupContainer((array) $viewPaths, $cachePath);
-        (new ViewServiceProvider($this->container))->register();
+        $this->setupContainer();
 
-        $this->factory = $this->container->get('view');
-        $this->compiler = $this->container->get('blade.compiler');
+        if (isset($factory)) {
+            $this->factory = $factory;
+        } else {
+            $this->setupFactory();
+        }
     }
 
-    public function render(string $view, array $data = [], array $mergeData = []): string
+    /**
+     * Setup the IoC container instance.
+     *
+     * @return void
+     */
+    protected function setupContainer()
+    {
+        $this->container = new Container;
+
+        $this->container->singleton('files', function () {
+            return new Filesystem;
+        });
+
+        $this->container->singleton('events', function () {
+            return new Dispatcher($this->container);
+        });
+
+        // Laravel 11 の BladeCompiler はコンストラクタが変わっている
+        $this->container->singleton('blade.compiler', function () {
+            $compiler = new BladeCompiler(
+                $this->container['files'], 
+                $this->cachePath
+            );
+            
+            // カスタムディレクティブなどの初期化
+            
+            return $compiler;
+        });
+    }
+
+    /**
+     * Setup view factory.
+     *
+     * @return void
+     */
+    protected function setupFactory()
+    {
+        $resolver = new EngineResolver;
+
+        $resolver->register('blade', function () {
+            if (!isset($this->compiler)) {
+                $this->compiler = $this->container['blade.compiler'];
+            }
+            return new CompilerEngine($this->compiler);
+        });
+
+        $finder = new FileViewFinder($this->container['files'], (array) $this->viewPaths);
+
+        $this->factory = new Factory(
+            $resolver,
+            $finder,
+            $this->container['events']
+        );
+    }
+
+    /**
+     * Compile the view at the given path.
+     *
+     * @param  string  $path
+     * @return void
+     */
+    public function compile($path = null)
+    {
+        if (!isset($this->compiler)) {
+            $this->compiler = $this->container['blade.compiler'];
+        }
+        
+        $path = $path ?: $this->viewPaths;
+
+        $path = is_array($path) ? reset($path) : $path;
+
+        $directory = $path;
+
+        if (! is_dir($directory)) {
+            $directory = dirname($path);
+        }
+
+        foreach ($this->container['files']->allFiles($directory) as $file) {
+            if ($file->getExtension() === 'php' && strpos($file->getFilename(), '.blade.') !== false) {
+                $this->compiler->compile($file->getRealPath());
+            }
+        }
+    }
+
+    /**
+     * Render a template.
+     *
+     * @param  string  $view
+     * @param  array   $data
+     * @param  array   $mergeData
+     * @return string
+     */
+    public function render($view, $data = [], $mergeData = [])
     {
         return $this->make($view, $data, $mergeData)->render();
     }
 
-    public function make($view, $data = [], $mergeData = []): View
+    /**
+     * Create a new view instance.
+     *
+     * @param  string  $view
+     * @param  array   $data
+     * @param  array   $mergeData
+     * @return \Illuminate\View\View
+     */
+    public function make($view, $data = [], $mergeData = [])
     {
         return $this->factory->make($view, $data, $mergeData);
     }
 
-    public function compiler(): BladeCompiler
+    /**
+     * Get the evaluated view contents for a named view.
+     *
+     * @param  string  $view
+     * @param  array   $data
+     * @return string
+     */
+    public function view($view, $data = [])
     {
-        return $this->compiler;
+        return $this->make($view, $data)->render();
     }
 
-    public function directive(string $name, callable $handler)
-    {
-        $this->compiler->directive($name, $handler);
-    }
-
-    public function if($name, callable $callback)
-    {
-        $this->compiler->if($name, $callback);
-    }
-
-    public function exists($view): bool
-    {
-        return $this->factory->exists($view);
-    }
-
-    public function file($path, $data = [], $mergeData = []): View
-    {
-        return $this->factory->file($path, $data, $mergeData);
-    }
-
+    /**
+     * Add a piece of shared data to the environment.
+     *
+     * @param  array|string  $key
+     * @param  mixed  $value
+     * @return mixed
+     */
     public function share($key, $value = null)
     {
         return $this->factory->share($key, $value);
     }
 
-    public function composer($views, $callback): array
+    /**
+     * Register a view composer event.
+     *
+     * @param  array|string  $views
+     * @param  \Closure|string  $callback
+     * @return array
+     */
+    public function composer($views, $callback)
     {
         return $this->factory->composer($views, $callback);
     }
 
-    public function creator($views, $callback): array
+    /**
+     * Register a view creator event.
+     *
+     * @param  array|string  $views
+     * @param  \Closure|string  $callback
+     * @return array
+     */
+    public function creator($views, $callback)
     {
         return $this->factory->creator($views, $callback);
     }
 
-    public function addNamespace($namespace, $hints): self
+    /**
+     * Add a new namespace to the loader.
+     *
+     * @param  string  $namespace
+     * @param  string|array  $hints
+     * @return $this
+     */
+    public function addNamespace($namespace, $hints)
     {
         $this->factory->addNamespace($namespace, $hints);
 
         return $this;
     }
 
-    public function replaceNamespace($namespace, $hints): self
+    /**
+     * Get the compiler
+     *
+     * @return \Illuminate\View\Compilers\BladeCompiler
+     */
+    public function getCompiler()
     {
-        $this->factory->replaceNamespace($namespace, $hints);
+        if (!isset($this->compiler)) {
+            $this->compiler = $this->container['blade.compiler'];
+        }
+        
+        return $this->compiler;
+    }
+
+    /**
+     * Register a custom Blade compiler.
+     *
+     * @param  callable  $compiler
+     * @return $this
+     */
+    public function extend(callable $compiler)
+    {
+        $this->getCompiler()->extend($compiler);
 
         return $this;
     }
 
-    public function __call(string $method, array $params)
+    /**
+     * Register a handler for custom directives.
+     *
+     * @param  string  $name
+     * @param  callable  $handler
+     * @return $this
+     */
+    public function directive($name, callable $handler)
     {
-        return call_user_func_array([$this->factory, $method], $params);
+        $this->getCompiler()->directive($name, $handler);
+
+        return $this;
     }
 
-    protected function setupContainer(array $viewPaths, string $cachePath)
+    /**
+     * Get the view factory.
+     *
+     * @return \Illuminate\View\Factory
+     */
+    public function getFactory()
     {
-        $this->container->bindIf('files', fn () => new Filesystem);
-        $this->container->bindIf('events', fn () => new Dispatcher);
-        $this->container->bindIf('config', fn () => new Repository([
-            'view.paths' => $viewPaths,
-            'view.compiled' => $cachePath,
-        ]));
-
-        Facade::setFacadeApplication($this->container);
+        return $this->factory;
     }
 }
