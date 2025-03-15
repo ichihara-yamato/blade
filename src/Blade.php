@@ -1,6 +1,6 @@
 <?php
 
-namespace Jenssegers\Blade;
+namespace IchiharaYamato\Blade;
 
 use Illuminate\Container\Container;
 use Illuminate\Events\Dispatcher;

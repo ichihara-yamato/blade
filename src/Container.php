@@ -1,6 +1,6 @@
 <?php
 
-namespace Jenssegers\Blade;
+namespace IchiharaYamato\Blade;
 
 use Closure;
 use Illuminate\Container\Container as BaseContainer;

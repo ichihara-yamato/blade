@@ -4,7 +4,7 @@ use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\Factory;
 use Illuminate\View\View;
 use Illuminate\View\ViewFinderInterface;
-use Jenssegers\Blade\Blade;
+use IchiharaYamato\Blade\Blade;
 use PHPUnit\Framework\TestCase;
 
 class BladeTest extends TestCase

@@ -22,7 +22,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Jenssegers\\Blade\\": "src/"
+            "IchiharaYamato\\Blade\\": "src/"
         }
     },
     "minimum-stability": "dev",

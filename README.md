@@ -21,7 +21,7 @@ composer require jenssegers/blade
 Create a Blade instance by passing it the folder(s) where your view files are located, and a cache folder. Render a template by calling the `make` method. More information about the Blade templating engine can be found on http://laravel.com/docs/5.8/blade.
 
 ```php
-use Jenssegers\Blade\Blade;
+use IchiharaYamato\Blade\Blade;
 
 $blade = new Blade('views', 'cache');
 
