@@ -24,5 +24,11 @@
             "name": "Yamato Ichihara",
             "homepage": "https://github.com/ichihara-yamato"
         }
+    ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/ichihara-yamato/blade"
+        }
     ]
 }
