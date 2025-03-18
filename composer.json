@@ -1,12 +1,13 @@
 {
     "name": "ichihara-yamato/blade",
     "description": "A standalone version of Laravel's Blade templating engine for use outside of Laravel.",
-    "type": "true",
+    "keywords": ["laravel", "blade", "template", "templating"],
+    "type": "library",
     "require": {
-        "php": "8.1",
-        "illuminate/filesystem": "11.0",
-        "illuminate/events": "11.0",
-        "illuminate/container": "11.0"
+        "php": "^8.1",
+        "illuminate/filesystem": "^11.0",
+        "illuminate/events": "^11.0",
+        "illuminate/container": "^11.0"
     },
     "license": "MIT",
     "autoload": {
@@ -20,9 +21,8 @@
             "homepage": "https://jenssegers.com"
         },
         {
-            "name": "Ichihara Yamato",
-            "email": "99705612+ichihara-yamato@users.noreply.github.com"
+            "name": "Yamato Ichihara",
+            "homepage": "https://github.com/ichihara-yamato"
         }
-    ],
-    "minimum-stability": "dev"
+    ]
 }
