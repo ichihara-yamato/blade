@@ -1,6 +1,6 @@
 # Blade
 
-[![Latest Stable Version](http://img.shields.io/github/release/jenssegers/blade.svg)](https://packagist.org/packages/jenssegers/blade) [![Coverage Status](http://img.shields.io/coveralls/jenssegers/blade.svg)](https://coveralls.io/r/jenssegers/blade)
+[![Latest Stable Version](http://img.shields.io/github/release/ichihara-yamato/blade.svg)](https://packagist.org/packages/ichihara-yamato/blade) [![Coverage Status](http://img.shields.io/coveralls/ichihara-yamato/blade.svg)](https://coveralls.io/r/ichihara-yamato/blade)
 
 The standalone version of [Laravel's Blade templating engine](https://laravel.com/docs/5.8/blade) for use outside of Laravel.
 
@@ -13,7 +13,7 @@ The standalone version of [Laravel's Blade templating engine](https://laravel.co
 Install using composer:
 
 ```bash
-composer require jenssegers/blade
+composer require ichihara-yamato/blade
 ```
 
 ## Usage
@@ -25,13 +25,13 @@ use IchiharaYamato\Blade\Blade;
 
 $blade = new Blade('views', 'cache');
 
-echo $blade->make('homepage', ['name' => 'John Doe'])->render();
+echo $blade->make('homepage', ['name' => 'Ichihara Yamato'])->render();
 ```
 
 Alternatively you can use the shorthand method `render`:
 
 ```php
-echo $blade->render('homepage', ['name' => 'John Doe']);
+echo $blade->render('homepage', ['name' => 'Ichihara Yamato']);
 ```
 
 You can also extend Blade using the `directive()` function:
@@ -48,7 +48,7 @@ Which allows you to use the following in your blade template:
 Current date: @datetime($date)
 ```
 
-The Blade instances passes all methods to the internal view factory. So methods such as `exists`, `file`, `share`, `composer` and `creator` are available as well. Check out the [original documentation](https://laravel.com/docs/5.8/views) for more information.
+The Blade instances passes all methods to the internal view factory. So methods such as `exists`, `file`, `share`, `composer` and `creator` are available as well. Check out the [original documentation](https://laravel.com/docs/12.x/views) for more information.
 
 ## Integrations
 

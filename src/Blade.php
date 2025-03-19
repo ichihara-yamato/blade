@@ -86,6 +86,9 @@ class Blade
             );
             
             // カスタムディレクティブなどの初期化
+            $compiler->directive('datetime', function ($expression) {
+                return "<?php echo ($expression)->format('Y-m-d H:i:s'); ?>";
+            });
             
             return $compiler;
         });
